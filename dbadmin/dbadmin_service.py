@@ -2,6 +2,7 @@ import csv
 import json
 import os
 from datetime import datetime
+from time import sleep
 
 import dropbox
 import jsonpickle
@@ -13,7 +14,6 @@ PATH_SHARED_LINKS_RESULT = "/tmp/dropbox_list_shared_links_result.json"
 PATH_SHARED_LINKS_RESULT_CSV = "/tmp/dropbox_list_shared_links_result.csv"
 
 
-# noinspection PyTypeChecker
 class DropboxService:
     def __init__(self, token=None):
         self.dbxt = dropbox.DropboxTeam(token)
@@ -60,7 +60,7 @@ class DropboxService:
                 self.progress["processed"] += 1
                 print self.progress
 
-            self.save_shared_folder_to_cache()
+            self.save_shared_folder_to_cache(members)
         else:
             with open(PATH_SHARED_FOLDERS_LIST_RESULT, "r") as f:
                 members = json.load(f)
@@ -164,16 +164,6 @@ class DropboxService:
             })
         return links
 
-    def revoke_shared_link(self, team_member_id, url):
-        """
-        Revokes the shared link of a team member.
-        :param team_member_id:
-        :param url:
-        :return:
-        """
-        dbx = self.dbxt.as_user(team_member_id)
-        dbx.sharing_revoke_shared_link(url)
-
     def list_shared_folders(self, team_member_id):
         """
         Lists the shared folders of a team member.
@@ -196,9 +186,20 @@ class DropboxService:
 
         return shared_folders
 
+    def revoke_shared_link(self, team_member_id, url):
+        """
+        Revokes the shared link of a team member.
+        :param team_member_id:
+        :param url:
+        :return:
+        """
+        dbx = self.dbxt.as_user(team_member_id)
+        dbx.sharing_revoke_shared_link(url)
+
     def unshare_folder(self, team_member_id, shared_folder_id):
         dbx = self.dbxt.as_user(team_member_id)
-        dbx.sharing_unshare_folder(shared_folder_id, False)
+        le_result = dbx.sharing_unshare_folder(shared_folder_id, False)
+        self.__wait_for_completion(dbx, le_result, 30)
 
     def get_member_info(self, team_member_id, account_id):
         dbx = self.dbxt.as_user(team_member_id)
@@ -209,6 +210,18 @@ class DropboxService:
             "team_member_id": account.team_member_id,
             "email": account.email
         }
+
+    @staticmethod
+    def __wait_for_completion(dbx, le_result, timeout):
+        for i in range(1, timeout):
+            jid = le_result.get_async_job_id()
+            js = dbx.sharing_check_job_status(jid)
+            if js.is_complete():
+                return
+            if js.is_failed():
+                raise Exception('Failed to perform dbx action.')
+            sleep(1.0)
+        raise Exception('Unshare did not finish in time.')
 
     @staticmethod
     def __get_access_type(dbx_access):
