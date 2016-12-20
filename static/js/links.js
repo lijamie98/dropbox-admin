@@ -108,11 +108,13 @@ $(function () {
     };
 
     // run initial methods
-    if (!$loading[0].complete)
+    if (!$('#loading-gear')[0].complete) {
         $('#loading-gear', $loading).on('load', function () {
+            console.log("******************");
             obj.updateContents(false);
         });
-    else
+    } else {
         obj.updateContents(false);
+    }
     obj.listeners();
 });
