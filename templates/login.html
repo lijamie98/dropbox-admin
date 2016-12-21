@@ -1,29 +1,40 @@
-{% extends "layout.html" %}
-{% block title %}
-    index
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
 
-{% block head %}
-    <link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css"> {#for indexing#}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login</title>
+
+    <script src="/js/jquery-3.1.1.min.js"></script>
+    <script src="/bootstrap/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="/bootstrap/css/bootstrap.yeti.min.css">
     <link rel="stylesheet" href="/css/login.css">
-
-    <script src="js/login.js"></script>
-{% endblock %}
-
-{% block content %}
-    <div class="login">
-        <h3>Login</h3>
-
-        <label for="token">Token</label>
-        <div class="input-group">
-            <input type="text" class="form-control" placeholder="Token" id="token">
-            <span class="input-group-btn">
-                <button class="btn btn-primary" type="button" id="login-button">Login</button>
-            </span>
+</head>
+<body>
+<div class="login">
+    <h3>Login</h3>
+    <form action="" method="post">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="email" class="form-control" name="username" id="username">
         </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" name="password" id="password">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+    </form>
 
-        <button class="btn btn-danger" id="dev-token">
-            Use Dev Token
-        </button>
+    <div class="alert alert-danger" role="alert" id="if-incorrect">
+        <b>Incorrect Credentials.</b> Your username and password did not match our database.
     </div>
-{% endblock %}
+</div>
+
+<script>
+    if (window.location.search == "?incorrect=true")
+        document.getElementById('if-incorrect').style.display = 'block';
+</script>
+</body>
+</html>
