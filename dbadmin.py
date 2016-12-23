@@ -5,13 +5,23 @@ import jsonpickle as jsonpickle
 import yaml
 from flask import Flask
 from flask import json
+from flask import redirect
 from flask import render_template
 from flask import request
 from flask import send_from_directory
+from flask import url_for
+from flask import session
+from flask import abort
 
 import dbadmin.dbadmin_service
 
 application = Flask(__name__)
+
+
+def check_login(logged_in):
+    if 'authenticated' in session:
+        return logged_in
+    return redirect(url_for('login'))
 
 
 # define contextual processes.
@@ -22,85 +32,111 @@ def pages_json():
 
 @application.route('/')
 def index():
-    return render_template('index.html')
+    return check_login(render_template('index.html'))
 
 
 @application.route('/shared-folders', methods=['GET'])
 def list_all_shared_folders():
-    force_update = (request.args.get('force-update') == "1")
-    result = service.list_all_shared_folders(force_update=force_update)
-    return json.dumps(json.loads(jsonpickle.encode(result)), indent=2)
+    if 'authenticated' in session:
+        force_update = (request.args.get('force-update') == "1")
+        result = service.list_all_shared_folders(force_update=force_update)
+        return json.dumps(json.loads(jsonpickle.encode(result)), indent=2)
+    abort(401)
 
 
 @application.route('/links', methods=['GET'])
 def list_all_shared_links():
-    force_update = (request.args.get('force-update') == "1")
-    result = service.list_all_shared_links(force_update=force_update)
-    return json.dumps(json.loads(jsonpickle.encode(result)), indent=2)
+    if 'authenticated' in session:
+        force_update = (request.args.get('force-update') == "1")
+        result = service.list_all_shared_links(force_update=force_update)
+        return json.dumps(json.loads(jsonpickle.encode(result)), indent=2)
+    abort(401)
 
 
 @application.route('/members', methods=['GET'])
 def list_all_team_members():
-    return json.dumps(json.loads(jsonpickle.encode(service.list_team_members())), indent=2)
+    if 'authenticated' in session:
+        return json.dumps(json.loads(jsonpickle.encode(service.list_team_members())), indent=2)
+    abort(401)
 
 
 @application.route('/members/<path:team_member_id>/shared-folders', methods=['GET'])
 def list_shared_folders(team_member_id):
-    return json.dumps(json.loads(jsonpickle.encode(service.list_shared_folders(team_member_id))), indent=2)
+    if 'authenticated' in session:
+        return json.dumps(json.loads(jsonpickle.encode(service.list_shared_folders(team_member_id))), indent=2)
+    abort(401)
 
 
 @application.route('/members/<path:team_member_id>/shared-links', methods=['GET'])
 def list_shared_links(team_member_id):
-    return json.dumps(json.loads(jsonpickle.encode(service.list_shared_links(team_member_id))), indent=2)
+    if 'authenticated' in session:
+        return json.dumps(json.loads(jsonpickle.encode(service.list_shared_links(team_member_id))), indent=2)
+    abort(401)
 
 
 @application.route('/members/<path:team_member_id>/shared-links/_revoke', methods=['DELETE'])
 def revoke_shared_link(team_member_id):
-    service.revoke_shared_link(team_member_id, request.headers['url'])
-    return '200', 200
+    if 'authenticated' in session:
+        service.revoke_shared_link(team_member_id, request.headers['url'])
+        return '200', 200
+    abort(401)
 
 
 @application.route('/members/<path:team_member_id>/shared-folders/_unshare', methods=['DELETE'])
 def unshare_folder(team_member_id):
-    service.unshare_folder(team_member_id, request.headers['shared_folder_id'])
-    return '200', 200
+    if 'authenticated' in session:
+        service.unshare_folder(team_member_id, request.headers['shared_folder_id'])
+        return '200', 200
+    abort(401)
 
 
 @application.route('/pages/members')
 def members_page():
-    return render_template('members.html')
+    return check_login(render_template('members.html'))
 
 
 # user dashboard page
 @application.route('/pages/dashboard')
 def user_dashboard_page():
-    return render_template('user-dashboard.html')
+    return check_login(render_template('user-dashboard.html'))
 
 
 # shared link page
 @application.route('/pages/links')
 def link_page():
-    return render_template('links.html')
+    return check_login(render_template('links.html'))
 
 
 # shared folders page
 @application.route('/pages/shared-folders')
 def shared_folders():
-    return render_template('shared-folders.html')
+    return check_login(render_template('shared-folders.html'))
+
+
+# login page
+def get_authentication(username, password):
+    print username, password
+    # handle login here and return a boolean
+    return username == 'admin' and password == 'admin123'
+
+
+@application.route('/login', methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template('login.html'), 302
+    elif request.method == "POST":
+        if get_authentication(request.form['username'], request.form['password']):
+            session['authenticated'] = True
+            return redirect(url_for('index'), 302)
+        return redirect("/login?incorrect=true")
+    return None
 
 
 '''
 
 To be used in the future.
 
-
 '''
-
-
-# login page
-@application.route('/login')
-def login():
-    return render_template('login.html'), 302
 
 
 @application.route('/progress', methods=['GET'])
@@ -132,4 +168,5 @@ if __name__ == '__main__':
     except IOError:
         logging.error("Error reading token.yaml. Please make sure the token.yaml file is properly configured.")
 
+    application.secret_key = os.urandom(24)
     application.run(host='0.0.0.0', debug=True)
