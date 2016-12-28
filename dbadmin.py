@@ -13,7 +13,8 @@ from flask import url_for
 from flask import session
 from flask import abort
 
-import dbadmin.dbadmin_service
+from dbadmin import dbadmin_service
+from dbadmin import dbadmin_auth
 
 application = Flask(__name__)
 
@@ -117,7 +118,7 @@ def shared_folders():
 def get_authentication(username, password):
     print username, password
     # handle login here and return a boolean
-    return username == 'admin' and password == 'admin123'
+    return auth.match_user(username, password)
 
 
 @application.route('/login', methods=["GET", "POST"])
@@ -163,7 +164,11 @@ if __name__ == '__main__':
             config = yaml.load(token_file)
         with open('pages.json', 'r') as f:
             pagesJson = jsonpickle.decode(f.read())
-        service = dbadmin.dbadmin_service.DropboxService(token=config['dropbox-token'])
+
+        # initialize classes
+        service = dbadmin_service.DropboxService(token=config['dropbox-token'])
+        # TODO implement telenav ldap server
+        auth = dbadmin_auth.LdapAuth('ldap://ldap.forumsys.com:389', 'dc=example,dc=com')
 
     except IOError:
         logging.error("Error reading token.yaml. Please make sure the token.yaml file is properly configured.")
