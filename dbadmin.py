@@ -4,17 +4,17 @@ import os
 import jsonpickle as jsonpickle
 import yaml
 from flask import Flask
+from flask import abort
 from flask import json
 from flask import redirect
 from flask import render_template
 from flask import request
 from flask import send_from_directory
-from flask import url_for
 from flask import session
-from flask import abort
+from flask import url_for
 
-from dbadmin import dbadmin_service
 from dbadmin import dbadmin_auth
+from dbadmin import dbadmin_service
 
 application = Flask(__name__)
 
@@ -168,7 +168,7 @@ if __name__ == '__main__':
         # initialize classes
         service = dbadmin_service.DropboxService(token=config['dropbox-token'])
         # TODO implement telenav ldap server
-        auth = dbadmin_auth.LdapAuth('ldap://ldap.forumsys.com:389', 'dc=example,dc=com')
+        auth = dbadmin_auth.LdapAuth(uri='ldap://ldap.forumsys.com:389', base_dn='dc=example,dc=com', ro_account='cn=read-only-admin,dc=example,dc=com', ro_password='password')
 
     except IOError:
         logging.error("Error reading token.yaml. Please make sure the token.yaml file is properly configured.")
