@@ -254,14 +254,14 @@ class DropboxService:
         pass
 
 
-# def main():
-#     with open(PATH_SHARED_FOLDERS_LIST_RESULT, "r") as f:
-#         members = json.load(f)
-#         DropboxService.save_shared_folder_to_cache(members)
-#
-#     with open(PATH_SHARED_LINKS_RESULT, "r") as f:
-#         members = json.load(f)
-#         DropboxService.save_links_to_cache(members)
+def main():
+    with open(PATH_SHARED_FOLDERS_LIST_RESULT, "r") as f:
+        members = json.load(f)
+        DropboxService.save_shared_folder_to_cache(members)
+
+    with open(PATH_SHARED_LINKS_RESULT, "r") as f:
+        members = json.load(f)
+        DropboxService.save_links_to_cache(members)
 
 
 if __name__ == '__main__':

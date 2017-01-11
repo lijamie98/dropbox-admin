@@ -1,6 +1,7 @@
 import logging
 import os
 
+import argparse
 import jsonpickle as jsonpickle
 import yaml
 from flask import Flask
@@ -115,10 +116,9 @@ def shared_folders():
 
 
 # login page
-def get_authentication(username, password):
-    print username, password
+def authenticate(username, password):
     # handle login here and return a boolean
-    return auth.match_user(username, password)
+    return auth.authenticate(username, password)
 
 
 @application.route('/login', methods=["GET", "POST"])
@@ -126,7 +126,7 @@ def login():
     if request.method == "GET":
         return render_template('login.html'), 302
     elif request.method == "POST":
-        if get_authentication(request.form['username'], request.form['password']):
+        if authenticate(request.form['username'], request.form['password']):
             session['authenticated'] = True
             return redirect(url_for('index'), 302)
         return redirect("/login?incorrect=true")
@@ -155,23 +155,40 @@ def send_js(path):
     return send_from_directory('static', path)
 
 
+def create_auth(ldap_config, acl):
+    return dbadmin_auth.LdapAuth(
+        uri=ldap_config['uri'],
+        base_dn=ldap_config['search_base_dn'],
+        ro_account=ldap_config['ro_account'],
+        ro_password=ldap_config['ro_password'],
+        acl=acl)
+
+
 if __name__ == '__main__':
     SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-    application.secret_key = os.urandom(24)
 
     try:
-        with open('token.yaml', 'r') as token_file:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--ldap", help="LDAP settings in config.yaml. Default: 'ldap'", default="ldap")
+        parser.add_argument("--debug", help="Run Flask in debug mode.", action="store_true")
+        args = parser.parse_args()
+
+        # Load the configuration file
+        with open('config.yaml', 'r') as token_file:
             config = yaml.load(token_file)
+
+        # Load hte pages configuration for views.
         with open('pages.json', 'r') as f:
             pagesJson = jsonpickle.decode(f.read())
 
-        # initialize classes
+        # initialize dropbox service
         service = dbadmin_service.DropboxService(token=config['dropbox-token'])
-        # TODO implement telenav ldap server
-        auth = dbadmin_auth.LdapAuth(uri='ldap://ldap.forumsys.com:389', base_dn='dc=example,dc=com', ro_account='cn=read-only-admin,dc=example,dc=com', ro_password='password')
+
+        # initialize authentication
+        auth = create_auth(config[args.ldap], config['acl'])
+
+        application.secret_key = os.urandom(24)
+        application.run(host='0.0.0.0', debug=args.debug)
 
     except IOError:
         logging.error("Error reading token.yaml. Please make sure the token.yaml file is properly configured.")
-
-    application.secret_key = os.urandom(24)
-    application.run(host='0.0.0.0', debug=True)
