@@ -7,8 +7,12 @@ class LdapAuth:
         self.base_dn = kwargs['base_dn']
         self.ro_account = kwargs['ro_account']
         self.ro_password = kwargs['ro_password']
+        self.acl = kwargs['acl']
 
-    def match_user(self, user, password):
+    def authenticate(self, user, password):
+        if user not in self.acl:
+            return False
+
         # Search DN that matches the user
         conn = ldap.initialize(self.uri)
         # Find the DN that matches the user
@@ -19,6 +23,8 @@ class LdapAuth:
             dn = self.__search_with_filter('sAMAccount', user)
         if dn is None:
             return False
+
+        print "Found user: {}".format(dn)
 
         try:
             # Now bind with the searched DN with the password
