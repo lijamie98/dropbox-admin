@@ -11,8 +11,14 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import send_from_directory
+<<<<<<< HEAD
 from flask import session
 from flask import url_for
+=======
+from flask import url_for
+from flask import session
+from flask import abort
+>>>>>>> 30eba42... modified login page to integrate with LADP server
 
 from dbadmin import dbadmin_auth
 from dbadmin import dbadmin_service
@@ -116,9 +122,16 @@ def shared_folders():
 
 
 # login page
+<<<<<<< HEAD
 def authenticate(username, password):
     # handle login here and return a boolean
     return auth.authenticate(username, password)
+=======
+def get_authentication(username, password):
+    print username, password
+    # handle login here and return a boolean
+    return username == 'admin' and password == 'admin123'
+>>>>>>> 30eba42... modified login page to integrate with LADP server
 
 
 @application.route('/login', methods=["GET", "POST"])
@@ -126,7 +139,11 @@ def login():
     if request.method == "GET":
         return render_template('login.html'), 302
     elif request.method == "POST":
+<<<<<<< HEAD
         if authenticate(request.form['username'], request.form['password']):
+=======
+        if get_authentication(request.form['username'], request.form['password']):
+>>>>>>> 30eba42... modified login page to integrate with LADP server
             session['authenticated'] = True
             return redirect(url_for('index'), 302)
         return redirect("/login?incorrect=true")
@@ -192,3 +209,9 @@ if __name__ == '__main__':
 
     except IOError:
         logging.error("Error reading token.yaml. Please make sure the token.yaml file is properly configured.")
+<<<<<<< HEAD
+=======
+
+    application.secret_key = os.urandom(24)
+    application.run(host='0.0.0.0', debug=True)
+>>>>>>> 30eba42... modified login page to integrate with LADP server
