@@ -2,4 +2,5 @@
 *.pyc
 token.yaml
 token.txt
+config.yaml
 venv/
